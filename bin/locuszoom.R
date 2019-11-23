@@ -2533,9 +2533,26 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
             box.padding = 0.5,
             max.overlaps = Inf,
             # larger nudge is usefull for the regions with maximal log(p-value) << 10
-            nudge_y = max(1.5, max(metal$transformed_p) * 0.1),
+            nudge_y = max(2, max(metal$transformed_p) * 0.1),
+            nudge_x = ifelse(
+                nrow(merged_data) == 1,
+                0.05,
+                ifelse(
+                    merged_data$pos[2] > merged_data$pos[1],
+                    c(-0.05, 0.05),
+                    c(0.05, -0.05)
+                )
+            ),
             point.size = 2.5,
-            segment.color = "grey35"
+            segment.color = "grey50",
+            arrow = arrow(
+                length = unit(0.015, "npc"),
+                # type = "closed",
+                # ends = "last"
+            ),
+            # add shadow (halo)
+            bg.color = "grey99",
+            bg.r = 0.1
         )
         + scale_x_continuous(
             expand = c(0, 0)
