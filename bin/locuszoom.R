@@ -2533,7 +2533,8 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
             box.padding = 0.5,
             max.overlaps = Inf,
             nudge_y = max(p_values) * 0.1,
-            point.size = 2.5
+            point.size = 2.5,
+            segment.color = "grey35"
         )
         # not needed as we use expand instead
         # + theme(plot.margin = margin(1, 0, 0, 0, "cm"))
