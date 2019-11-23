@@ -1757,7 +1757,7 @@ panel.bed <- function(bed_data,track_height,startbp,endbp) {
       y = unit(y_mid,'lines'),
       just = c("left","center"),
       gp = gpar(
-        cex = 1
+        cex = 0.8
       )
     );
 
