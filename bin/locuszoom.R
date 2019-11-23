@@ -2494,6 +2494,8 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
   # Otherwise, we'll label each reference/conditional SNP accordingly. 
   if (!is.null(denote_markers)) {
 
+    metal$transformed_p <- transformation(metal$P.value)
+
     metal_data <- metal[metal$MarkerName %in% denote_markers$chrpos, ]
 
     merged_data <- merge(
@@ -2505,8 +2507,6 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
     # metal data seems to have repeated markers (exact duplicates)
     merged_data <- merged_data[!duplicated(merged_data$MarkerName), ]
 
-    p_values <- transformation(metal$P.value)
-
     if (args[["drawMarkerNames"]]) {
         text <- "paste(snp, string, sep='\n')"
     } else {
@@ -2514,12 +2514,12 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
     }
 
     p <- (
-        ggplot(metal, aes(x = pos, y = P.value))
+        ggplot(metal, aes(x = pos, y = transformed_p))
         # plot points to repel away from them, but make them transparent,
         # so that the colormap from the grid-based points is used
         + geom_point(
             size = 2,
-            alpha = 0
+            alpha = 0.0  # use 0.2 for validation
         )
         + theme_void()
         + scale_color_manual(guide = "none")
@@ -2532,22 +2532,16 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
             min.segment.length = 0,
             box.padding = 0.5,
             max.overlaps = Inf,
-            nudge_y = max(p_values) * 0.1,
+            # larger nudge is usefull for the regions with maximal log(p-value) << 10
+            nudge_y = max(1.5, max(metal$transformed_p) * 0.1),
             point.size = 2.5,
             segment.color = "grey35"
         )
-        # not needed as we use expand instead
-        # + theme(plot.margin = margin(1, 0, 0, 0, "cm"))
         + scale_x_continuous(
             expand = c(0, 0)
         )
-        # allow the labels to go beyond the edges
         + coord_cartesian(clip = "off")
-        + scale_y_continuous(
-            # m_lower, a_lower, m_uppper, a_upper
-            # m = multiplicative, a = additive
-            expand = c(0.05, 0, 0.15, 0)
-        )
+        + ylim(yRange[1], yRange[2])
     )
 
     g <- ggplotGrob(p)
