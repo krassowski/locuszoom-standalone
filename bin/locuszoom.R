@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 suppressPackageStartupMessages({
+  require(ggplot2);
+  require(ggrepel);
   require(stats);
   require(utils);
   require(grid);
@@ -2491,14 +2493,66 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
   #
   # Otherwise, we'll label each reference/conditional SNP accordingly. 
   if (!is.null(denote_markers)) {
-    for (i in 1:dim(denote_markers)[1]) {
-      denote_row = denote_markers[i,];
-      
-      metal_data = as.list(metal[metal$MarkerName == denote_row$chrpos,]);
-      metal_pval = transformation(metal_data$P.value);
-      
-      grid.refsnp(denote_row$snp,denote_row$pos,metal_pval,args[['drawMarkerNames']],denote_row$string,denote_row$color);
+
+    metal_data <- metal[metal$MarkerName %in% denote_markers$chrpos, ]
+
+    merged_data <- merge(
+        metal_data, denote_markers,
+        by.x = "MarkerName", by.y = "chrpos", suffixes = c(".x", "")
+    )
+    merged_data$P.value <- transformation(merged_data$P.value);
+
+    # metal data seems to have repeated markers (exact duplicates)
+    merged_data <- merged_data[!duplicated(merged_data$MarkerName), ]
+
+    p_values <- transformation(metal$P.value)
+
+    if (args[["drawMarkerNames"]]) {
+        text <- "paste(snp, string, sep='\n')"
+    } else {
+        text <- "string"
     }
+
+    p <- (
+        ggplot(metal, aes(x = pos, y = P.value))
+        # plot points to repel away from them, but make them transparent,
+        # so that the colormap from the grid-based points is used
+        + geom_point(
+            size = 2,
+            alpha = 0
+        )
+        + theme_void()
+        + scale_color_manual(guide = "none")
+        + geom_text_repel(
+            data = merged_data,
+            aes_string(label = text),
+            color = merged_data$color,
+            lineheight = 0.8,
+            # always draw segments
+            min.segment.length = 0,
+            box.padding = 0.5,
+            max.overlaps = Inf,
+            nudge_y = max(p_values) * 0.1,
+            point.size = 2.5
+        )
+        # not needed as we use expand instead
+        # + theme(plot.margin = margin(1, 0, 0, 0, "cm"))
+        + scale_x_continuous(
+            expand = c(0, 0)
+        )
+        # allow the labels to go beyond the edges
+        + coord_cartesian(clip = "off")
+        + scale_y_continuous(
+            # m_lower, a_lower, m_uppper, a_upper
+            # m = multiplicative, a = additive
+            expand = c(0.05, 0, 0.15, 0)
+        )
+    )
+
+    g <- ggplotGrob(p)
+
+    grid.draw(g)
+
   } else {
     # Draw label for reference SNP. 
     # This is either the label a user provides, or the actual reference SNP rs#. 
