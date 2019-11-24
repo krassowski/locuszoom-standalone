@@ -2513,6 +2513,39 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
         text <- "string"
     }
 
+    nudge_x <- 0.05
+    if (nrow(merged_data) == 2) {
+        if (merged_data$pos[2] > merged_data$pos[1]) {
+            nudge_x <- c(-0.05, 0.05)
+        } else {
+            nudge_x <- c(0.05, -0.05)
+        }
+    }
+
+    text_repel_config = list(
+        data = merged_data,
+        aes_string(label = text),
+        color = merged_data$color,
+        lineheight = 0.8,
+        # always draw segments
+        min.segment.length = 0,
+        box.padding = 0.5,
+        max.overlaps = Inf,
+        # larger nudge is usefull for the regions with maximal log(p-value) << 10
+        nudge_y = max(2, max(metal$transformed_p) * 0.1),
+        nudge_x = nudge_x,
+        point.size = 2.5,
+        arrow = arrow(
+            length = unit(0.015, "npc"),
+            # type = "closed",
+            # ends = "last"
+        ),
+        seed = 1,
+        # add shadow (halo)
+        bg.color = "grey99",
+        bg.r = 0.1
+    )
+
     p <- (
         ggplot(metal, aes(x = pos, y = transformed_p))
         # plot points to repel away from them, but make them transparent,
@@ -2523,36 +2556,25 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
         )
         + theme_void()
         + scale_color_manual(guide = "none")
-        + geom_text_repel(
-            data = merged_data,
-            aes_string(label = text),
-            color = merged_data$color,
-            lineheight = 0.8,
-            # always draw segments
-            min.segment.length = 0,
-            box.padding = 0.5,
-            max.overlaps = Inf,
-            # larger nudge is usefull for the regions with maximal log(p-value) << 10
-            nudge_y = max(2, max(metal$transformed_p) * 0.1),
-            nudge_x = ifelse(
-                nrow(merged_data) == 1,
-                0.05,
-                ifelse(
-                    merged_data$pos[2] > merged_data$pos[1],
-                    c(-0.05, 0.05),
-                    c(0.05, -0.05)
+        + do.call(
+            geom_text_repel,
+            c(
+                text_repel_config,
+                list(
+                    segment.color = "white",
+                    segment.size = 1
                 )
-            ),
-            point.size = 2.5,
-            segment.color = "grey50",
-            arrow = arrow(
-                length = unit(0.015, "npc"),
-                # type = "closed",
-                # ends = "last"
-            ),
-            # add shadow (halo)
-            bg.color = "grey99",
-            bg.r = 0.1
+            )
+        )
+        + do.call(
+            geom_text_repel,
+            c(
+                text_repel_config,
+                list(
+                    segment.color = "grey30",
+                    segment.size = 0.50
+                )
+            )
         )
         + scale_x_continuous(
             expand = c(0, 0)
