@@ -1712,6 +1712,7 @@ panel.bed <- function(bed_data,track_height,startbp,endbp) {
     cat("Plotting track ",sub_name,"\n")
     bed_sub = subset(bed_data,name == sub_name);
   
+    if (FALSE) {
     # Combine regions that overlap to avoid overplotting
     if (dim(bed_sub)[1] > 1) {
       # Only need to do this check when there's more than 1 row :) 
@@ -1724,6 +1725,7 @@ panel.bed <- function(bed_data,track_height,startbp,endbp) {
         }
       }
       bed_sub = subset(bed_sub,!is.na(bed_sub$start));
+    }
     }
     
     bed_sub$width = abs(bed_sub$end - bed_sub$start);
@@ -1757,7 +1759,8 @@ panel.bed <- function(bed_data,track_height,startbp,endbp) {
       y = unit(y_mid,'lines'),
       just = c("left","center"),
       gp = gpar(
-        cex = 0.8
+        cex = 0.7,
+        lineheight = 1.6
       )
     );
 
