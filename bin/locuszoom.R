@@ -1684,8 +1684,25 @@ panel.finemap <- function (
   
 }
 
+add_extent_marker_for_cropped = function(diff, original, cropped, direction, y_mid, side, marker_left='', marker_right='') {
+    if (max(diff) > 0) {
+        with_excess_original = original[diff > 0, ]
+        with_excess_trimmed = cropped[diff > 0, ]
+        grid.text(
+          label = paste(marker_left, round(with_excess_original[direction], 2), 'Mb', marker_right),
+          x = unit(with_excess_trimmed[direction], 'native') + unit(0.5, 'char') * ifelse(side=='left', 1, -1),
+          y = unit(y_mid, 'lines'),
+          just = c(side, "center"),
+          gp = gpar(
+            cex = 0.7,
+            lineheight = 1.6
+          )
+        );
+    }
+}
+
 # bed_tracks is a data frame with: chr, start, end, name, score, strand, thickStart, thickEnd, itemRgb
-panel.bed <- function(bed_data,track_height,startbp,endbp) {
+panel.bed <- function(bed_data, track_height, startbp, endbp) {
   # compute colors
   if ("itemRgb" %in% names(bed_data)) {
     bed_data$color = sapply(bed_data$itemRgb,function(x) { do.call(rgb,c(as.list(unlist(strsplit(x,","))),maxColorValue=255)) });
@@ -1700,41 +1717,42 @@ panel.bed <- function(bed_data,track_height,startbp,endbp) {
   
   startbp = startbp / 1E6;
   endbp = endbp / 1E6;
-    
-  # Chop off edges that go off the plot. 
-  bed_data$start = sapply(bed_data$start,function(x) max(x,startbp));
-  bed_data$end = sapply(bed_data$end,function(x) min(x,endbp));
+
+  original_data = data.frame(bed_data)
+
+  # Chop off edges that go off the plot.
+  bed_data$start = sapply(bed_data$start, function(x) max(x,startbp));
+  bed_data$end = sapply(bed_data$end, function(x) min(x,endbp));
   
   # plot each sub-track separately
   sub_tracks = rev(unique(bed_data$name))
   i = 0;
   for (sub_name in sub_tracks) {
-    cat("Plotting track ",sub_name,"\n")
-    bed_sub = subset(bed_data,name == sub_name);
-  
-    if (FALSE) {
+    cat("Plotting track ", sub_name, "\n")
+    bed_sub = subset(bed_data, name == sub_name);
+    original_sub = subset(original_data, name == sub_name);
+
     # Combine regions that overlap to avoid overplotting
-    if (dim(bed_sub)[1] > 1) {
-      # Only need to do this check when there's more than 1 row :) 
-      
-      bed_sub = bed_sub[order(bed_sub$start),];
-      for (j in (2:(dim(bed_sub)[1]))) {
-        if (bed_sub$start[j] <= bed_sub$end[j-1]) {
-          bed_sub$start[j] = bed_sub$start[j-1];
-          bed_sub$start[j-1] = NA;
-        }
-      }
-      bed_sub = subset(bed_sub,!is.na(bed_sub$start));
-    }
-    }
-    
+    #if (dim(bed_sub)[1] > 1) {
+    #  # Only need to do this check when there's more than 1 row :)
+    #
+    #  bed_sub = bed_sub[order(bed_sub$start),];
+    #  for (j in (2:(dim(bed_sub)[1]))) {
+    #    if (bed_sub$start[j] <= bed_sub$end[j-1]) {
+    #      bed_sub$start[j] = bed_sub$start[j-1];
+    #      bed_sub$start[j-1] = NA;
+    #    }
+    #  }
+    #  bed_sub = subset(bed_sub,!is.na(bed_sub$start));
+    #}
+
     bed_sub$width = abs(bed_sub$end - bed_sub$start);
-  
+
     y_mid = (0.5 * track_height) + (i * track_height);
-    
+
     #bed_sub$y0 = y_mid - (0.25 * track_height);
     #bed_sub$y1 = y_mid + (0.25 * track_height);
-        
+
     grid.rect(
       x = unit(bed_sub$start,'native'),
       y = unit(y_mid,'lines'),
@@ -1752,7 +1770,27 @@ panel.bed <- function(bed_data,track_height,startbp,endbp) {
       # x = unit(c(startbp,endbp),'native'),
       # y = unit(rep(y_mid,2),'lines')
     # );
-    
+
+    add_extent_marker_for_cropped(
+        diff=startbp - original_sub$start,
+        original=original_sub,
+        cropped=bed_sub,
+        direction='start',
+        y_mid=y_mid,
+        side='left',
+        marker_left='←'
+    )
+    add_extent_marker_for_cropped(
+        diff=original_sub$end - endbp,
+        original=original_sub,
+        cropped=bed_sub,
+        direction='end',
+        y_mid=y_mid,
+        side='right',
+        marker_right='→'
+    )
+
+
     grid.text(
       label = sub_name,
       x = unit(1,'npc') + unit(0.5,'char'),
