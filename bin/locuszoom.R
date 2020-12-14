@@ -569,11 +569,11 @@ AdjustModesOfArgs <- function(args) {
   args <- sublapply(args,
     c('condLdLow'),
     as.character);
-  
+
   args <- sublapply(args,
     c('experimental','clobber','recombOver','recombFill','pquery','drawMarkerNames',
       'showRecomb','showAnnot','showRefsnpAnnot','bigDiamond','showPartialGenes','shiftGeneNames',
-      'clean', 'dryRun','legendMissing','hiRequiredGene','refsnpShadow'),
+      'clean', 'dryRun','legendMissing','hiRequiredGene','refsnpShadow', 'showGenes'),
     as.logical);
 
   args <- sublapply( args,
@@ -1194,14 +1194,19 @@ panel.flatbed <- function (
   multiplier = 0.001, 
   height = 2/14, 
   buffer=0.003, 
-  subset, 
+  subset,
   cex=.9, 
   rows=2,
   showPartialGenes=FALSE,
   shiftGeneNames=TRUE,
   computeOptimalRows=FALSE, ...) 
-{      
+{
+
   if ( prod(dim(flat)) <= 0 ) { return(1); }
+
+  if ( !args[['showGenes']] ) {
+      return(0);
+  }
 
   df <- flat;
 
@@ -1461,7 +1466,7 @@ panel.flatbed <- function (
     for (requiredGeneIdnum in reqIDList) {
       requiredGeneIdx = which(df0uniq$idnum == requiredGeneIdnum)
       
-      # Need the arrow grob to know how wide it is. 
+      # Need the arrow grob to know how wide it is.
       at <- arrowText(
         df0uniq$name[requiredGeneIdx],
         x = unit((df0uniq$start[requiredGeneIdx] + df0uniq$stop[requiredGeneIdx])/2, 'npc'),
@@ -1486,7 +1491,7 @@ panel.flatbed <- function (
         y = y_center,
         width = 1.025 * max(npc_width_gene_text,npc_width_gene_body),
         height = total_height,
-        gp = gpar(col=args[['hiRequiredGeneColor']])
+        gp = gpar(col=args[['hiRequiredGeneColor']], fill=NA)
       )
 
     }
@@ -2844,7 +2849,7 @@ zplot <- function(metal,ld=NULL,recrate=NULL,refidx=NULL,nrugs=0,postlude=NULL,a
   }
   
   ########## annotation (genes)
-  if(args[['rfrows']] > 0) {
+  if(args[['rfrows']] > 0 || !args[['showGenes']]) {
     pushViewport(
       viewport(xscale=pvalVp$xscale,
         layout.pos.row=15,
